@@ -1,16 +1,65 @@
 import socket
+import threading
 
-host, port = ('localhost', 5599)
-socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+IP = "127.0.0.1"
+PORT = 55559
 
-try:
-    
-    socket.connect((host, port))
-    print("client connecté !")
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-except ConnectionRefusedError:
+#connexion au server 
 
-    print("connexion refusé")
-finally:
+client.connect((IP, PORT))
 
-    socket.close()
+#demander le pseudo au client
+
+pseudo = input("Entrée votre pseudo")
+
+# envoie du pseudo au server 
+client.send(bytes(pseudo, "utf-8"))
+
+#fonction pour envoyer un messages
+
+def envoyerMessage():
+
+    while True:
+
+        message = input()
+        #envoie du message au server
+        client.send(bytes(message, "utf-8"))
+
+        if message == "exit":
+            break
+
+
+#fonction pour recevoir les messages du server
+        
+def recevoirMessage():
+
+    while True:
+        try:
+            message = client.recv(1024).decode("utf-8")
+            print(message)
+
+        except:
+                break
+
+thread_envoie = threading.Thread(target=envoyerMessage)
+thread_receptionMessage = threading.Thread(target=recevoirMessage)
+
+thread_envoie.start()
+thread_receptionMessage.start()
+
+
+
+
+
+
+
+
+
+
+
+                
+
+
+        
