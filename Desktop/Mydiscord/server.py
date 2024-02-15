@@ -22,64 +22,76 @@ server.listen(10)
 clients = []
 pseudos = []
 
-def diffuser(message):
-    for client in clients:
-        client.send(bytes(message,"utf-8"))
+import threading
+import socket
 
-def gestionConnexion():
+class srv():
+    clients = []   # Assurez-vous de déclarer ces listes en tant que variables de classe
+    pseudos = []   # pour qu'elles soient partagées entre les méthodes de la classe
 
-    while True:
-        client, adress = server.accept()
-        print(f"Connexion établie avec {str(adress)}")
+    @classmethod
+    def diffuser(cls, message):
+        for client in cls.clients:
+            client.send(bytes(message, "utf-8"))
 
-        pseudo = client.recv(1024).decode("utf-8")
+    @classmethod
+    def gestionConnexion(cls):
+        while True:
+            client, address = server.accept()
+            print(f"Connexion établie avec {str(address)}")
 
-        #mettre un nouveau client dans la liste des clients
-        clients.append(client)
-        pseudos.append(pseudo)
+            pseudo = client.recv(1024).decode("utf-8")
 
-    #message d'acceuille pour les clients
-        print(f"{pseudo} a rejoint le chat")
-        client.send(bytes("bienvenue dans le chat : \n", "utf-8"))
-        diffuser(f"{pseudo} a rejoint le chat")
+            # Mettre un nouveau client dans la liste des clients
+            cls.clients.append(client)
+            cls.pseudos.append(pseudo)
 
-        thread_client = threading.Thread(target=gestion_client, args=(client,pseudo))
-        thread_client.start()
+            # Message d'accueil pour les clients
+            print(f"{pseudo} a rejoint le chat")
+            client.send(bytes("Bienvenue dans le chat : \n", "utf-8"))
+            cls.diffuser(f"{pseudo} a rejoint le chat")
 
-#gerer les lessages envoyes par les client
-def gestion_client(client,pseudo):
-    while True:
+            thread_client = threading.Thread(target=cls.gestion_client, args=(client, pseudo))
+            thread_client.start()
 
-        try:
-            message = client.recv(1024).decode("utf-8")
+    # Gérer les messages envoyés par les clients
+    @classmethod
+    def gestion_client(cls, client, pseudo):
+        while True:
+            try:
+                message = client.recv(1024).decode("utf-8")
 
-            if message == "exit":
-                index = clients.index(client)
-                #si un client fait exit, la fonction supprime le client
-                clients.remove(client)   
-                client.close()
-            #par la suite ont supprime le pseudo
-                pseudo = pseudos[index]
-                pseudos.remove(pseudo)
+                if message == "exit":
+                    index = cls.clients.index(client)
+                    # Si un client fait exit, la fonction supprime le client
+                    cls.clients.remove(client)
+                    client.close()
+                    # Par la suite, on supprime le pseudo
+                    pseudo = cls.pseudos[index]
+                    cls.pseudos.remove(pseudo)
 
-                diffuser(f"{pseudo} a quitter le chat")
-                break
+                    cls.diffuser(f"{pseudo} a quitté le chat")
+                    break
 
-            else:   
-                diffuser(f"{pseudo}: {message}")
+                else:
+                    cls.diffuser(f"{pseudo}: {message}")
 
-        except:
+            except:
+                if message == "exit":
+                    index = cls.clients.index(client)
+                    # Si un client fait exit, la fonction supprime le client
+                    cls.clients.remove(client)
+                    client.close()
+                    # Par la suite, on supprime le pseudo
+                    pseudo = cls.pseudos[index]
+                    cls.pseudos.remove(pseudo)
 
-               if message == "exit":
-                index = clients.index(client)
-                #si un client fait exit, la fonction supprime le client
-                clients.remove(client)   
-                client.close()
-            #par la suite ont supprime le pseudo
-                pseudo = pseudos[index]
-                pseudos.remove(pseudo)
+                    cls.diffuser(f"{pseudo} a quitté le chat")
+                    break
 
-                diffuser(f"{pseudo} a quitter le chat")
-                break
-print("le serveur de chat est en marche !!!")              
-gestionConnexion()
+print("Le serveur de chat est en marche !!!")
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(("localhost", 5555))
+server.listen(5)
+
+srv.gestionConnexion()
