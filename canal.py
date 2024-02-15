@@ -1,3 +1,5 @@
+# canal.py
+
 import mysql.connector
 
 class Canal:

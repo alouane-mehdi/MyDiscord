@@ -1,3 +1,5 @@
+# utilisateur.py
+
 import mysql.connector
 
 class Utilisateur:
