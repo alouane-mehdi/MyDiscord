@@ -24,7 +24,7 @@ class LoginInterface:
         username = self.username_entry.get()
         password = self.password_entry.get()
 
-        if username == "admin" and password == "password":
+        if username == "admin" and password == "password": #BASE DE DONNES A METTRE 
             messagebox.showinfo("Login Successful", "Welcome to the main menu!")
             self.root.destroy()
             MainMenu().show_main_menu()
