@@ -1,8 +1,9 @@
 import socket
 import threading
 
+
 IP = "127.0.0.1"
-PORT = 55559
+PORT = 55556
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -48,6 +49,8 @@ thread_receptionMessage = threading.Thread(target=recevoirMessage)
 
 thread_envoie.start()
 thread_receptionMessage.start()
+
+
 
 
 

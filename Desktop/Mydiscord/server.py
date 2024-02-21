@@ -91,7 +91,7 @@ class srv():
 
 print("Le serveur de chat est en marche !!!")
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(("localhost", 5555))
+server.bind(("localhost", 55558))
 server.listen(5)
 
 srv.gestionConnexion()
