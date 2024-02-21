@@ -8,7 +8,7 @@ from canal import Canal
 from chat_window import ChatWindow
 
 def main():
-    db = Database('localhost', 'root', 'ouarda2017', 'myDiscord')
+    db = Database('ahmed-aouad.students-laplateforme.io', 'ahmed-aouad', 'ouarda2017', 'ahmed-aouad_mydiscord')
     db_connection = db.get_connection()
 
     app = QApplication(sys.argv)
