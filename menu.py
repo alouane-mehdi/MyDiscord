@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from main_menu import MainMenu
+import mysql.connector
 
 class LoginInterface:
     def __init__(self):
@@ -20,11 +21,25 @@ class LoginInterface:
         self.login_button = tk.Button(self.root, text="Login", command=self.login)
         self.login_button.pack()
 
+        # Connexion à la base de données
+        self.db_connection = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="ouarda2017",
+            database="myDiscord"
+        )
+        self.db_cursor = self.db_connection.cursor()
+
     def login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
 
-        if username == "admin" and password == "password": #BASE DE DONNES A METTRE 
+        # Requête pour vérifier les informations de connexion
+        query = "SELECT id_utilisateur FROM Utilisateurs WHERE email = %s AND mot_de_passe = %s"
+        self.db_cursor.execute(query, (username, password))
+        user = self.db_cursor.fetchone()
+
+        if user:
             messagebox.showinfo("Login Successful", "Welcome to the main menu!")
             self.root.destroy()
             MainMenu().show_main_menu()
