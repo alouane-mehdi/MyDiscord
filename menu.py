@@ -23,10 +23,10 @@ class LoginInterface:
 
         # Connexion à la base de données
         self.db_connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
+            host="ahmed-aouad.students-laplateforme.io",
+            user="ahmed-aouad",
             password="ouarda2017",
-            database="myDiscord"
+            database="ahmed-aouad_mydiscord"
         )
         self.db_cursor = self.db_connection.cursor()
 
