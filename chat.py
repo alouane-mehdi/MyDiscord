@@ -5,6 +5,7 @@ import tempfile
 import pyaudio
 import wave
 import pygame
+import threading
 
 # Se connecter à la base de données MySQL
 conn = mysql.connector.connect(
@@ -14,6 +15,9 @@ conn = mysql.connector.connect(
     database="chatdb"
 )
 cursor = conn.cursor()
+
+# Variable globale pour suivre l'état de l'enregistrement audio
+is_recording = False
 
 def envoyer_message():
     sender = entry_sender.get()
@@ -26,6 +30,9 @@ def envoyer_message():
         cursor.execute(query, (sender, receiver, message_type, message))
     else:  # Message vocal
         record_audio()
+        # Attendre la fin de l'enregistrement audio
+        while is_recording:
+            pass
         audio_path = save_audio()
         query = "INSERT INTO messages (sender, receiver, message_type, audio_path) VALUES (%s, %s, %s, %s)"
         cursor.execute(query, (sender, receiver, message_type, audio_path))
@@ -34,12 +41,14 @@ def envoyer_message():
     afficher_messages()
 
 def record_audio():
-    global audio_frames
+    global is_recording, audio_frames
+    is_recording = True
     audio_frames = []
     chunk = 1024  
     sample_format = pyaudio.paInt16  
     channels = 2
     fs = 44100  
+    seconds = 5  # Durée de l'enregistrement
     
     p = pyaudio.PyAudio()
     
@@ -51,13 +60,14 @@ def record_audio():
                     frames_per_buffer=chunk,
                     input=True)
     
-    while True:
+    for i in range(0, int(fs / chunk * seconds)):
         data = stream.read(chunk)
         audio_frames.append(data)
     
     stream.stop_stream()
     stream.close()
     p.terminate()
+    is_recording = False
 
 def save_audio():
     filename = tempfile.mktemp(prefix="audio_", suffix=".wav", dir="")
