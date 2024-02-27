@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
 from utilisateur import Utilisateur
+from chat_fenetre import ChatFenetre  # Assurez-vous d'avoir cette classe définie comme indiqué précédemment
 
 class ChatWindow(QMainWindow):
     def __init__(self, db_connection):
@@ -12,7 +13,6 @@ class ChatWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
-        # Champs de connexion/enregistrement
         self.email_edit = QLineEdit(self)
         self.mdp_edit = QLineEdit(self)
         self.mdp_edit.setEchoMode(QLineEdit.Password)
@@ -46,7 +46,8 @@ class ChatWindow(QMainWindow):
         email = self.email_edit.text()
         mdp = self.mdp_edit.text()
         if Utilisateur.verifier_connexion(self.db_connection, email, mdp):
-            QMessageBox.information(self, 'Succès', 'Connexion réussie!')
-            # Ici, vous pouvez procéder à la redirection vers la fenêtre principale du chat
+            self.hide()  # Cachez ou fermez la fenêtre de connexion
+            self.chat_fenetre = ChatFenetre()
+            self.chat_fenetre.show()
         else:
             QMessageBox.critical(self, 'Erreur', 'Email ou mot de passe incorrect.')
