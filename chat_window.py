@@ -14,10 +14,14 @@ class ChatWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central_widget)
 
         self.email_edit = QLineEdit(self)
+        self.email_edit.setPlaceholderText("Email")
         self.mdp_edit = QLineEdit(self)
+        self.mdp_edit.setPlaceholderText("Mot de passe")
         self.mdp_edit.setEchoMode(QLineEdit.Password)
         self.prenom_edit = QLineEdit(self)
+        self.prenom_edit.setPlaceholderText("Prénom")
         self.nom_edit = QLineEdit(self)
+        self.nom_edit.setPlaceholderText("Nom")
         self.connexion_btn = QPushButton('Connexion', self)
         self.enregistrement_btn = QPushButton('Enregistrement', self)
 
@@ -35,18 +39,36 @@ class ChatWindow(QMainWindow):
         self.connexion_btn.clicked.connect(self.connecterUtilisateur)
         self.enregistrement_btn.clicked.connect(self.enregistrerUtilisateur)
 
-        self.setGeometry(300, 300, 350, 250)
-        self.setWindowTitle('Chat Amélioré')
+        self.setGeometry(300, 300, 500, 600)
+        self.setWindowTitle('Connexion - Chat')
         self.appliquerStyles()
 
-    def enregistrerUtilisateur(self):
-        email = self.email_edit.text()
-        mdp = self.mdp_edit.text()
-        prenom = self.prenom_edit.text()
-        nom = self.nom_edit.text()
-        utilisateur = Utilisateur(email=email, prenom=prenom, nom=nom)
-        utilisateur.ajouter_utilisateur(self.db_connection, mdp)
-        QMessageBox.information(self, 'Succès', 'Utilisateur enregistré avec succès!')
+    def appliquerStyles(self):
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #36393f;
+            }
+            QLineEdit {
+                background-color: #202225;
+                color: #ffffff;
+                border: 1px solid #202225;
+                border-radius: 5px;
+                padding: 5px;
+            }
+            QPushButton {
+                background-color: #7289da;
+                color: white;
+                border-radius: 5px;
+                padding: 10px 15px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #677bc4;
+            }
+            QLabel {
+                color: #ffffff;
+            }
+        """)
 
     def connecterUtilisateur(self):
         email = self.email_edit.text()
@@ -59,25 +81,14 @@ class ChatWindow(QMainWindow):
         else:
             QMessageBox.critical(self, 'Erreur', 'Email ou mot de passe incorrect.')
 
-    def appliquerStyles(self):
-        self.setStyleSheet("""
-            QLineEdit, QTextEdit {
-                border: 1px solid #a0a0a0;
-                border-radius: 4px;
-                padding: 5px;
-            }
-            QPushButton {
-                background-color: #5cb85c;
-                color: white;
-                border-radius: 4px;
-                padding: 5px;
-                margin-top: 10px;
-            }
-            QPushButton:hover {
-                background-color: #4cae4c;
-            }
-            QLabel {
-                font-weight: bold;
-            }
-        """)
-
+    def enregistrerUtilisateur(self):
+        email = self.email_edit.text()
+        mdp = self.mdp_edit.text()
+        prenom = self.prenom_edit.text()
+        nom = self.nom_edit.text()
+        utilisateur = Utilisateur(email=email, prenom=prenom, nom=nom)
+        try:
+            utilisateur.ajouter_utilisateur(self.db_connection, mdp)
+            QMessageBox.information(self, 'Succès', 'Utilisateur enregistré avec succès!')
+        except Exception as e:
+            QMessageBox.critical(self, 'Erreur', f'Erreur lors de l\'enregistrement: {e}')

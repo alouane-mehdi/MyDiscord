@@ -11,20 +11,21 @@ class ChatFenetre(QWidget):
         self.chargerHistorique()
 
     def initUI(self):
-        layout = QVBoxLayout(self)
+        self.layout = QVBoxLayout(self)
 
         self.zone_messages = QTextEdit()
         self.zone_messages.setReadOnly(True)
         self.message_edit = QLineEdit()
+        self.message_edit.setPlaceholderText("Écrivez votre message ici...")
         self.envoyer_btn = QPushButton('Envoyer')
 
-        layout.addWidget(self.zone_messages)
-        layout.addWidget(self.message_edit)
-        layout.addWidget(self.envoyer_btn)
+        self.layout.addWidget(self.zone_messages)
+        self.layout.addWidget(self.message_edit)
+        self.layout.addWidget(self.envoyer_btn)
 
         self.envoyer_btn.clicked.connect(self.envoyerMessage)
 
-        self.setGeometry(300, 300, 400, 500)
+        self.setGeometry(300, 300, 500, 600)
         self.setWindowTitle('Chat Amélioré')
         self.appliquerStyles()
 
@@ -72,22 +73,33 @@ class ChatFenetre(QWidget):
 
     def appliquerStyles(self):
         self.setStyleSheet("""
-            QTextEdit, QLineEdit {
-                border: 1px solid #ccc;
+            QWidget {
+                background-color: #36393f;
+            }
+            QTextEdit {
+                background-color: #40444b;
+                color: #ffffff;
+                border: None;
                 border-radius: 5px;
-                padding: 5px;
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            QLineEdit {
+                background-color: #202225;
+                color: #ffffff;
+                border: None;
+                border-radius: 5px;
+                padding: 10px;
+                margin: 10px 0;
             }
             QPushButton {
-                background-color: #007bff;
-                border-color: #007bff;
+                background-color: #7289da;
                 color: white;
-                padding: 6px 12px;
-                margin-top: 8px;
                 border-radius: 5px;
-                font-weight: bold;
+                padding: 10px 15px;
+                border: None;
             }
             QPushButton:hover {
-                background-color: #0056b3;
-                border-color: #0056b3;
+                background-color: #677bc4;
             }
         """)
