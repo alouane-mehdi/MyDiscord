@@ -22,3 +22,14 @@ class Utilisateur:
             cursor.execute(query, (email, mot_de_passe))
             result = cursor.fetchone()
             return True if result else False
+            
+    def recuperer_prenom(self, db_connection):
+        with db_connection.cursor() as cursor:
+            try:
+                query = "SELECT prenom FROM Utilisateurs WHERE email=%s"
+                cursor.execute(query, (self.email,))
+                result = cursor.fetchone()
+                return result[0] if result else None
+            except mysql.connector.Error as e:
+                print(f"Erreur lors de la récupération du prénom: {e}")
+                return None

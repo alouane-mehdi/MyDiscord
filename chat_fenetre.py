@@ -1,8 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushButton
+from datetime import datetime
 
 class ChatFenetre(QWidget):
-    def __init__(self):
+    def __init__(self, prenom=''):
         super().__init__()
+        self.prenom = prenom  # Stocke le prénom de l'utilisateur
         self.initUI()
 
     def initUI(self):
@@ -19,12 +21,18 @@ class ChatFenetre(QWidget):
 
         self.envoyer_btn.clicked.connect(self.envoyerMessage)
 
+        self.setGeometry(300, 300, 350, 250)
         self.setWindowTitle('Chat')
 
     def envoyerMessage(self):
         message = self.message_edit.text()
-        self.afficherMessage(message)
-        self.message_edit.clear()
+        if message:  # Assurez-vous que le message n'est pas vide
+            # Obtenez le timestamp actuel
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            formatted_message = f"[{timestamp}] {self.prenom}: {message}"  # Ajoutez le timestamp et le prénom au message
+            self.afficherMessage(formatted_message)
+            self.message_edit.clear()
 
     def afficherMessage(self, message):
         self.zone_messages.append(message)
+

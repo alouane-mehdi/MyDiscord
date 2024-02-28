@@ -55,7 +55,12 @@ class ChatWindow(QMainWindow):
         mdp = self.mdp_edit.text()
         if Utilisateur.verifier_connexion(self.db_connection, email, mdp):
             self.hide()  # Cachez ou fermez la fenêtre de connexion
-            self.chat_fenetre = ChatFenetre()
-            self.chat_fenetre.show()
+            utilisateur = Utilisateur(email=email)
+            prenom = utilisateur.recuperer_prenom(self.db_connection)
+            if prenom:
+                self.chat_fenetre = ChatFenetre(prenom)
+                self.chat_fenetre.show()
+            else:
+                QMessageBox.critical(self, 'Erreur', 'Impossible de récupérer les informations de l\'utilisateur.')
         else:
             QMessageBox.critical(self, 'Erreur', 'Email ou mot de passe incorrect.')
