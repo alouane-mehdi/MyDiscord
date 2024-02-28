@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
 from utilisateur import Utilisateur
-from chat_fenetre import ChatFenetre  # Assurez-vous d'avoir cette classe définie comme indiqué précédemment
+from chat_fenetre import ChatFenetre 
 
 class ChatWindow(QMainWindow):
     def __init__(self, db_connection):
