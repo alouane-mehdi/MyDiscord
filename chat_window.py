@@ -13,14 +13,20 @@ class ChatWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
+        # Champs pour l'email et le mot de passe
         self.email_edit = QLineEdit(self)
         self.mdp_edit = QLineEdit(self)
         self.mdp_edit.setEchoMode(QLineEdit.Password)
+
+        # Ajout des champs pour le prénom et le nom
         self.prenom_edit = QLineEdit(self)
         self.nom_edit = QLineEdit(self)
+
+        # Boutons de connexion et d'enregistrement
         self.connexion_btn = QPushButton('Connexion', self)
         self.enregistrement_btn = QPushButton('Enregistrement', self)
 
+        # Ajout des widgets au layout
         layout.addWidget(QLabel('Email'))
         layout.addWidget(self.email_edit)
         layout.addWidget(QLabel('Mot de passe'))
@@ -32,6 +38,7 @@ class ChatWindow(QMainWindow):
         layout.addWidget(self.connexion_btn)
         layout.addWidget(self.enregistrement_btn)
 
+        # Connexion des boutons à leurs fonctions respectives
         self.connexion_btn.clicked.connect(self.connecterUtilisateur)
         self.enregistrement_btn.clicked.connect(self.enregistrerUtilisateur)
 
@@ -54,13 +61,10 @@ class ChatWindow(QMainWindow):
         email = self.email_edit.text()
         mdp = self.mdp_edit.text()
         if Utilisateur.verifier_connexion(self.db_connection, email, mdp):
-            self.hide()  # Cachez ou fermez la fenêtre de connexion
-            utilisateur = Utilisateur(email=email)
-            prenom = utilisateur.recuperer_prenom(self.db_connection)
-            if prenom:
-                self.chat_fenetre = ChatFenetre(prenom)
-                self.chat_fenetre.show()
-            else:
-                QMessageBox.critical(self, 'Erreur', 'Impossible de récupérer les informations de l\'utilisateur.')
+            self.hide() 
+            prenom = Utilisateur.recuperer_prenom(self.db_connection, email)
+            self.chat_fenetre = ChatFenetre(prenom=prenom, db_connection=self.db_connection, user_email=email)
+            self.chat_fenetre.chargerHistorique()
+            self.chat_fenetre.show()
         else:
             QMessageBox.critical(self, 'Erreur', 'Email ou mot de passe incorrect.')

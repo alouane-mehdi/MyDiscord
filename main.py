@@ -4,7 +4,7 @@ from db import Database
 from chat_window import ChatWindow
 
 def main():
-    # Remplacez les informations de connexion par les vôtres
+
     db = Database('ahmed-aouad.students-laplateforme.io', 'ahmed-aouad', 'ouarda2017', 'ahmed-aouad_mydiscord')
     db_connection = db.get_connection()
 
