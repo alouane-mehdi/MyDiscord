@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
 from utilisateur import Utilisateur
-from chat_fenetre import ChatFenetre 
+from chat_fenetre import ChatFenetre
 
 class ChatWindow(QMainWindow):
     def __init__(self, db_connection):
@@ -16,6 +16,8 @@ class ChatWindow(QMainWindow):
         self.email_edit = QLineEdit(self)
         self.mdp_edit = QLineEdit(self)
         self.mdp_edit.setEchoMode(QLineEdit.Password)
+        self.prenom_edit = QLineEdit(self)
+        self.nom_edit = QLineEdit(self)
         self.connexion_btn = QPushButton('Connexion', self)
         self.enregistrement_btn = QPushButton('Enregistrement', self)
 
@@ -23,6 +25,10 @@ class ChatWindow(QMainWindow):
         layout.addWidget(self.email_edit)
         layout.addWidget(QLabel('Mot de passe'))
         layout.addWidget(self.mdp_edit)
+        layout.addWidget(QLabel('Prénom'))
+        layout.addWidget(self.prenom_edit)
+        layout.addWidget(QLabel('Nom'))
+        layout.addWidget(self.nom_edit)
         layout.addWidget(self.connexion_btn)
         layout.addWidget(self.enregistrement_btn)
 
@@ -35,7 +41,9 @@ class ChatWindow(QMainWindow):
     def enregistrerUtilisateur(self):
         email = self.email_edit.text()
         mdp = self.mdp_edit.text()
-        utilisateur = Utilisateur(email=email)
+        prenom = self.prenom_edit.text()
+        nom = self.nom_edit.text()
+        utilisateur = Utilisateur(email=email, prenom=prenom, nom=nom)
         try:
             utilisateur.ajouter_utilisateur(self.db_connection, mdp)
             QMessageBox.information(self, 'Succès', 'Utilisateur enregistré avec succès!')

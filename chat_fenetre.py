@@ -23,7 +23,7 @@ class ChatFenetre(QWidget):
 
     def envoyerMessage(self):
         message = self.message_edit.text()
-        self.afficherMessage(message)  
+        self.afficherMessage(message)
         self.message_edit.clear()
 
     def afficherMessage(self, message):
