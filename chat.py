@@ -1,142 +1,72 @@
 import tkinter as tk
-from tkinter import scrolledtext
-import mysql.connector
-import tempfile
-import pyaudio
-import wave
+from tkinter import scrolledtext, filedialog
 import pygame
-import threading
+import os
+import sounddevice as sd
+from scipy.io.wavfile import write
 
-# Se connecter à la base de données MySQL
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="Alouane13011",
-    database="chatdb"
-)
-cursor = conn.cursor()
+class ChatApp:
+    def __init__(self, master):
+        self.master = master
+        master.title("Chat Textuel avec Messages Vocaux")
 
-# Variable globale pour suivre l'état de l'enregistrement audio
-is_recording = False
+        self.message_area = scrolledtext.ScrolledText(master, state='disabled')
+        self.message_area.pack(expand=True, fill='both')
 
-def envoyer_message():
-    sender = entry_sender.get()
-    receiver = entry_receiver.get()
-    message_type = "Texte" if message_mode.get() == 0 else "Audio"
-    
-    if message_mode.get() == 0:  # Message texte
-        message = entry_message.get("1.0", tk.END).strip()
-        query = "INSERT INTO messages (sender, receiver, message_type, message) VALUES (%s, %s, %s, %s)"
-        cursor.execute(query, (sender, receiver, message_type, message))
-    else:  # Message vocal
-        record_audio()
-        # Attendre la fin de l'enregistrement audio
-        while is_recording:
-            pass
-        audio_path = save_audio()
-        query = "INSERT INTO messages (sender, receiver, message_type, audio_path) VALUES (%s, %s, %s, %s)"
-        cursor.execute(query, (sender, receiver, message_type, audio_path))
+        self.entry = tk.Entry(master)
+        self.entry.pack(expand=True, fill='x')
+        self.entry.bind("<Return>", self.send_message)
 
-    conn.commit()
-    afficher_messages()
+        self.record_button = tk.Button(master, text="Enregistrer Message Vocal", command=self.record_audio)
+        self.record_button.pack(expand=True, fill='x')
 
-def record_audio():
-    global is_recording, audio_frames
-    is_recording = True
-    audio_frames = []
-    chunk = 1024  
-    sample_format = pyaudio.paInt16  
-    channels = 2
-    fs = 44100  
-    seconds = 5  # Durée de l'enregistrement
-    
-    p = pyaudio.PyAudio()
-    
-    print('Recording...')
-    
-    stream = p.open(format=sample_format,
-                    channels=channels,
-                    rate=fs,
-                    frames_per_buffer=chunk,
-                    input=True)
-    
-    for i in range(0, int(fs / chunk * seconds)):
-        data = stream.read(chunk)
-        audio_frames.append(data)
-    
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-    is_recording = False
+        self.play_button = tk.Button(master, text="Lire Message Vocal", command=self.select_audio_file)
+        self.play_button.pack(expand=True, fill='x')
 
-def save_audio():
-    filename = tempfile.mktemp(prefix="audio_", suffix=".wav", dir="")
-    wf = wave.open(filename, 'wb')
-    wf.setnchannels(2)
-    wf.setsampwidth(pyaudio.PyAudio().get_sample_size(pyaudio.paInt16))
-    wf.setframerate(44100)
-    wf.writeframes(b''.join(audio_frames))
-    wf.close()
-    return filename
+        self.setup_audio()
 
-def afficher_messages():
-    query = "SELECT sender, receiver, message_type, message, audio_path FROM messages"
-    cursor.execute(query)
-    messages = cursor.fetchall()
-    message_box.config(state=tk.NORMAL)
-    message_box.delete(1.0, tk.END)
-    for sender, receiver, message_type, message, audio_path in messages:
-        if message_type == "Texte":
-            message_box.insert(tk.END, f"{sender} -> {receiver} (Texte): {message}\n")
-        else:
-            message_box.insert(tk.END, f"{sender} -> {receiver} (Audio): {audio_path}\n")
-    message_box.config(state=tk.DISABLED)
+    def setup_audio(self):
+        pygame.mixer.init()
 
-# Initialiser pygame pour la lecture audio
-pygame.init()
+    def send_message(self, event=None):
+        message = self.entry.get()
+        self.message_area.configure(state='normal')
+        self.message_area.insert('end', f"Me: {message}\n")
+        self.message_area.configure(state='disabled')
+        self.entry.delete(0, 'end')
 
-# Créer une fenêtre
-root = tk.Tk()
-root.title("Application de Chat")
+    def record_audio(self):
+        duration = 5  # Durée de l'enregistrement en secondes
 
-# Créer des widgets
-label_sender = tk.Label(root, text="Expéditeur:")
-entry_sender = tk.Entry(root)
+        # Enregistrement audio depuis le microphone
+        audio_data = sd.rec(int(duration * 44100), samplerate=44100, channels=2, dtype='int16')
+        sd.wait()
 
-label_receiver = tk.Label(root, text="Destinataire:")
-entry_receiver = tk.Entry(root)
+        # Chemin d'accès pour sauvegarder le fichier audio
+        audio_file = "message_audio.wav"
 
-label_message = tk.Label(root, text="Message:")
-entry_message = scrolledtext.ScrolledText(root, width=30, height=5)
+        # Enregistrement des données audio dans un fichier WAV
+        write(audio_file, 44100, audio_data)
 
-message_mode = tk.IntVar()
-radio_text = tk.Radiobutton(root, text="Texte", variable=message_mode, value=0)
-radio_audio = tk.Radiobutton(root, text="Audio", variable=message_mode, value=1)
+        # Lecture du fichier audio enregistré
+        self.play_audio(audio_file)
 
-button_envoyer = tk.Button(root, text="Envoyer", command=envoyer_message)
-message_box = scrolledtext.ScrolledText(root, width=40, height=10, state=tk.DISABLED)
+    def select_audio_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Fichiers audio", "*.wav")])
+        if file_path:
+            self.play_audio(file_path)
 
-# Placer les widgets dans la fenêtre
-label_sender.grid(row=0, column=0, padx=5, pady=5)
-entry_sender.grid(row=0, column=1, padx=5, pady=5)
+    def play_audio(self, audio_file):
+        try:
+            pygame.mixer.music.load(audio_file)
+            pygame.mixer.music.play()
+        except pygame.error as e:
+            print(f"Erreur de lecture audio : {e}")
 
-label_receiver.grid(row=1, column=0, padx=5, pady=5)
-entry_receiver.grid(row=1, column=1, padx=5, pady=5)
+def main():
+    root = tk.Tk()
+    app = ChatApp(root)
+    root.mainloop()
 
-label_message.grid(row=2, column=0, padx=5, pady=5)
-entry_message.grid(row=2, column=1, padx=5, pady=5)
-
-radio_text.grid(row=3, column=0, padx=5, pady=5)
-radio_audio.grid(row=3, column=1, padx=5, pady=5)
-
-button_envoyer.grid(row=4, column=0, columnspan=2, pady=5)
-
-message_box.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
-
-# Afficher la fenêtre
-afficher_messages()
-root.mainloop()
-
-# Fermer la connexion à la base de données MySQL
-cursor.close()
-conn.close()
+if __name__ == "__main__":
+    main()
