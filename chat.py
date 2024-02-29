@@ -1,9 +1,9 @@
 import tkinter as tk
 from tkinter import scrolledtext, filedialog
-import pygame
-import os
 import sounddevice as sd
-from scipy.io.wavfile import write
+import soundfile as sf
+from pydub import AudioSegment
+from pydub.playback import play
 
 class ChatApp:
     def __init__(self, master):
@@ -20,20 +20,15 @@ class ChatApp:
         self.record_button = tk.Button(master, text="Enregistrer Message Vocal", command=self.record_audio)
         self.record_button.pack(expand=True, fill='x')
 
-        self.play_button = tk.Button(master, text="Lire Message Vocal", command=self.select_audio_file)
-        self.play_button.pack(expand=True, fill='x')
-
-        self.setup_audio()
-
-    def setup_audio(self):
-        pygame.mixer.init()
+        self.messages = []  # Pour stocker les messages vocaux
 
     def send_message(self, event=None):
         message = self.entry.get()
-        self.message_area.configure(state='normal')
-        self.message_area.insert('end', f"Me: {message}\n")
-        self.message_area.configure(state='disabled')
-        self.entry.delete(0, 'end')
+        if message:
+            self.message_area.configure(state='normal')
+            self.message_area.insert('end', f"Me: {message}\n")
+            self.message_area.configure(state='disabled')
+            self.entry.delete(0, 'end')
 
     def record_audio(self):
         duration = 5  # Durée de l'enregistrement en secondes
@@ -46,22 +41,22 @@ class ChatApp:
         audio_file = "message_audio.wav"
 
         # Enregistrement des données audio dans un fichier WAV
-        write(audio_file, 44100, audio_data)
+        sf.write(audio_file, audio_data, 44100, 'PCM_24')
 
-        # Lecture du fichier audio enregistré
-        self.play_audio(audio_file)
+        # Ajouter le fichier audio à la liste des messages vocaux
+        self.messages.append(audio_file)
 
-    def select_audio_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Fichiers audio", "*.wav")])
-        if file_path:
-            self.play_audio(file_path)
+        # Afficher le message vocal dans la fenêtre de chat
+        self.display_audio_message(audio_file)
+
+    def display_audio_message(self, audio_file):
+        play_button = tk.Button(self.master, text="Lire", command=lambda: self.play_audio(audio_file))
+        self.message_area.window_create('end', window=play_button)
+        self.message_area.insert('end', '\n')
 
     def play_audio(self, audio_file):
-        try:
-            pygame.mixer.music.load(audio_file)
-            pygame.mixer.music.play()
-        except pygame.error as e:
-            print(f"Erreur de lecture audio : {e}")
+        audio = AudioSegment.from_file(audio_file)
+        play(audio)
 
 def main():
     root = tk.Tk()
