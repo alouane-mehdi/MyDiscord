@@ -2,11 +2,12 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushBut
 from datetime import datetime
 
 class ChatFenetre(QWidget):
-    def __init__(self, prenom='', db_connection=None, user_email=''):
-        super().__init__()
+    def __init__(self, prenom='', db_connection=None, user_email='', parent=None):
+        super().__init__(parent)  # Assurez-vous de passer parent à super()
         self.prenom = prenom
         self.db_connection = db_connection
         self.user_email = user_email
+        self.parent = parent  # Sauvegarder la référence de la fenêtre parente
         self.initUI()
         self.chargerHistorique()
 
@@ -18,12 +19,15 @@ class ChatFenetre(QWidget):
         self.message_edit = QLineEdit()
         self.message_edit.setPlaceholderText("Écrivez votre message ici...")
         self.envoyer_btn = QPushButton('Envoyer')
+        self.deconnexion_btn = QPushButton('Déconnexion')  # Bouton de déconnexion
 
         self.layout.addWidget(self.zone_messages)
         self.layout.addWidget(self.message_edit)
         self.layout.addWidget(self.envoyer_btn)
+        self.layout.addWidget(self.deconnexion_btn)  # Ajouter le bouton de déconnexion au layout
 
         self.envoyer_btn.clicked.connect(self.envoyerMessage)
+        self.deconnexion_btn.clicked.connect(self.deconnexion)  # Connecter le bouton de déconnexion
 
         self.setGeometry(300, 300, 500, 600)
         self.setWindowTitle('Chat Amélioré')
@@ -64,33 +68,30 @@ class ChatFenetre(QWidget):
         if id_utilisateur is not None:
             with self.db_connection.cursor() as cursor:
                 try:
-                    query = "SELECT contenu, date_publication FROM Messages WHERE id_utilisateur=%s ORDER BY date_publication ASC"
+                    query = "SELECT contenu, date_publication FROM Messages WHERE id_utilisateur = %s ORDER BY date_publication ASC"
                     cursor.execute(query, (id_utilisateur,))
                     for contenu, date_publication in cursor:
                         self.afficherMessage(contenu, "Historique")
                 except Exception as e:
                     print(f"Erreur lors de la récupération de l'historique: {e}")
 
+    def deconnexion(self):
+        self.close()  # Ferme la fenêtre de chat
+        if self.parent:
+            self.parent.show()  # Réaffiche la fenêtre de connexion
+
     def appliquerStyles(self):
         self.setStyleSheet("""
             QWidget {
                 background-color: #36393f;
             }
-            QTextEdit {
+            QTextEdit, QLineEdit {
                 background-color: #40444b;
                 color: #ffffff;
                 border: None;
                 border-radius: 5px;
                 padding: 10px;
                 margin-bottom: 10px;
-            }
-            QLineEdit {
-                background-color: #202225;
-                color: #ffffff;
-                border: None;
-                border-radius: 5px;
-                padding: 10px;
-                margin: 10px 0;
             }
             QPushButton {
                 background-color: #7289da;
