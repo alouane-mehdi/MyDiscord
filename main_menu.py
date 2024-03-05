@@ -1,5 +1,7 @@
 import pygame
 import sys
+from chat_window import ChatWindow  # Importe la classe ChatWindow
+from db import Database
 
 class MainMenu:
     def __init__(self):
@@ -23,12 +25,26 @@ class MainMenu:
         text_rect = text_surface.get_rect(center=(x + width / 2, y + height / 2))
         self.window.blit(text_surface, text_rect)
 
+    def open_chat_window(self, server, username, password, database):
+        db = Database(server, username, password, database)
+        db_connection = db.get_connection()
+
+        if db_connection is not None:
+            chat_window = ChatWindow(db_connection)
+            chat_window.show()
+        else:
+            print("Échec de la connexion à la base de données.")
+
     def show_main_menu(self):
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    if 20 <= mouse_x <= 220 and 100 <= mouse_y <= 150:
+                        self.open_chat_window('ahmed-aouad.students-laplateforme.io', 'ahmed-aouad', 'ouarda2017', 'ahmed-aouad_mydiscord')
 
             self.window.fill(self.WHITE)
 

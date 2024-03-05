@@ -40,9 +40,9 @@ class ChatFenetre(QWidget):
             self.afficherMessage(message, self.prenom)
             self.message_edit.clear()
 
-    def afficherMessage(self, message, prenom):
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        formatted_message = f"[{timestamp}] {prenom}: {message}"
+    def afficherMessage(self, contenu, prenom):
+        timestamp = contenu.strftime('%Y-%m-%d %H:%M:%S')  # Utiliser le timestamp récupéré de la base de données
+        formatted_message = f"[{timestamp}] {prenom}: {contenu}"  # Utiliser le contenu récupéré de la base de données
         self.zone_messages.append(formatted_message)
 
     def enregistrerMessage(self, message):
@@ -66,12 +66,13 @@ class ChatFenetre(QWidget):
     def chargerHistorique(self):
         id_utilisateur = self.recupererIdUtilisateur()
         if id_utilisateur is not None:
+            self.messages_historique = []  # Liste pour stocker les messages historiques
             with self.db_connection.cursor() as cursor:
                 try:
                     query = "SELECT contenu, date_publication FROM Messages WHERE id_utilisateur = %s ORDER BY date_publication ASC"
                     cursor.execute(query, (id_utilisateur,))
                     for contenu, date_publication in cursor:
-                        self.afficherMessage(contenu, "Historique")
+                        self.messages_historique.append((contenu, date_publication))  # Ajouter le message à la liste
                 except Exception as e:
                     print(f"Erreur lors de la récupération de l'historique: {e}")
 
@@ -104,3 +105,4 @@ class ChatFenetre(QWidget):
                 background-color: #677bc4;
             }
         """)
+
