@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QTextEdit, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QTextEdit, QMessageBox, QMenu, QAction
 from datetime import datetime
 import mysql.connector
 
@@ -21,6 +21,8 @@ class ChatApplication(QMainWindow):
         self.appliquerStyles()
 
     def setupConnexionUI(self):
+        self.clearLayout(self.layout_principal)
+
         self.email_edit = QLineEdit()
         self.email_edit.setPlaceholderText("Email")
         self.mdp_edit = QLineEdit()
@@ -49,21 +51,24 @@ class ChatApplication(QMainWindow):
 
     def setupChatUI(self):
         self.clearLayout(self.layout_principal)
+
         self.zone_messages = QTextEdit()
         self.zone_messages.setReadOnly(True)
         self.message_edit = QLineEdit()
         self.message_edit.setPlaceholderText("Écrivez votre message ici...")
         self.envoyer_btn = QPushButton('Envoyer')
         self.deconnexion_btn = QPushButton('Déconnexion')
+        self.emoticone_btn = QPushButton('😀')
 
         self.layout_principal.addWidget(self.zone_messages)
         self.layout_principal.addWidget(self.message_edit)
         self.layout_principal.addWidget(self.envoyer_btn)
         self.layout_principal.addWidget(self.deconnexion_btn)
+        self.layout_principal.addWidget(self.emoticone_btn)
 
         self.envoyer_btn.clicked.connect(self.envoyerMessage)
         self.deconnexion_btn.clicked.connect(self.deconnexion)
-
+        self.emoticone_btn.clicked.connect(self.ouvrirMenuEmoticones)
         self.chargerHistorique()
 
     def connecterUtilisateur(self):
@@ -84,82 +89,66 @@ class ChatApplication(QMainWindow):
         nom = self.nom_edit.text().strip()
 
         if email and mdp and prenom and nom:
-            with self.db_connection.cursor() as cursor:
+            with self.db_connection.cursor(buffered=True) as cursor:
                 try:
                     query = "INSERT INTO Utilisateurs (email, mot_de_passe, prenom, nom) VALUES (%s, %s, %s, %s)"
                     cursor.execute(query, (email, mdp, prenom, nom))
                     self.db_connection.commit()
                     QMessageBox.information(self, 'Succès', 'Utilisateur enregistré avec succès!')
-                    self.connecterUtilisateur()
-                except Exception as e:
+                    self.estConnecte = True
+                    self.user_email = email
+                    self.prenom = prenom
+                    self.setupChatUI()
+                except mysql.connector.Error as e:
                     self.db_connection.rollback()
                     QMessageBox.critical(self, 'Erreur', f'Erreur lors de l\'enregistrement: {e}')
         else:
             QMessageBox.critical(self, 'Erreur', 'Veuillez remplir tous les champs.')
 
-    def envoyerMessage(self):
-        message = self.message_edit.text().strip()
-        if message:
-            self.enregistrerMessage(message)
-            self.afficherMessage(message, self.prenom)
-            self.message_edit.clear()
+    def verifier_connexion(self, email, mot_de_passe):
+        with self.db_connection.cursor(buffered=True) as cursor:
+            cursor.execute("SELECT mot_de_passe FROM Utilisateurs WHERE email = %s", (email,))
+            result = cursor.fetchone()
+            return result and result[0] == mot_de_passe
 
-    def afficherMessage(self, message, prenom):
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        formatted_message = f"[{timestamp}] {prenom}: {message}"
-        self.zone_messages.append(formatted_message)
+    def envoyerMessage(self):
+        if self.estConnecte:
+            message = self.message_edit.text().strip()
+            if message:
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                formatted_message = f"[{timestamp}] {self.prenom}: {message}"
+                self.zone_messages.append(formatted_message)
+                self.enregistrerMessage(message)
+                self.message_edit.clear()
 
     def enregistrerMessage(self, message):
-        id_utilisateur = self.recupererIdUtilisateur()
-        if id_utilisateur is not None:
-            with self.db_connection.cursor() as cursor:
-                try:
-                    query = "INSERT INTO Messages (id_utilisateur, contenu, date_publication) VALUES (%s, %s, NOW())"
-                    cursor.execute(query, (id_utilisateur, message))
-                    self.db_connection.commit()
-                except Exception as e:
-                    self.db_connection.rollback()
-                    print(f"Erreur lors de l'enregistrement du message: {e}")
+        with self.db_connection.cursor(buffered=True) as cursor:
+            query = "INSERT INTO Messages (id_utilisateur, contenu, date_publication) VALUES ((SELECT id_utilisateur FROM Utilisateurs WHERE email = %s), %s, NOW())"
+            cursor.execute(query, (self.user_email, message))
+            self.db_connection.commit()
 
     def chargerHistorique(self):
-        id_utilisateur = self.recupererIdUtilisateur()
-        if id_utilisateur is not None:
-            with self.db_connection.cursor() as cursor:
-                try:
-                    query = "SELECT contenu, date_publication FROM Messages WHERE id_utilisateur = %s ORDER BY date_publication ASC"
-                    cursor.execute(query, (id_utilisateur,))
-                    for contenu, date_publication in cursor:
-                        self.afficherMessage(contenu, "Historique")
-                except Exception as e:
-                    print(f"Erreur lors de la récupération de l'historique: {e}")
+        with self.db_connection.cursor(buffered=True) as cursor:
+            cursor.execute("SELECT contenu, date_publication FROM Messages WHERE id_utilisateur = (SELECT id_utilisateur FROM Utilisateurs WHERE email = %s) ORDER BY date_publication ASC", (self.user_email,))
+            for (contenu, date_publication) in cursor:
+                if date_publication:
+                    timestamp = date_publication.strftime('%Y-%m-%d %H:%M:%S')
+                    formatted_message = f"[{timestamp}] {self.prenom}: {contenu}"
+                else:
+                    formatted_message = "[Date inconnue] {self.prenom}: {contenu}"
+                self.zone_messages.append(formatted_message)
 
     def deconnexion(self):
         self.estConnecte = False
         self.user_email = ''
-        self.prenom = ''
-        self.clearLayout(self.layout_principal)
+        self.prenom = ''  # Réinitialiser le prénom lors de la déconnexion
         self.setupConnexionUI()
 
-    def verifier_connexion(self, email, mot_de_passe):
-        with self.db_connection.cursor() as cursor:
-            query = "SELECT * FROM Utilisateurs WHERE email=%s AND mot_de_passe=%s"
-            cursor.execute(query, (email, mot_de_passe))
-            result = cursor.fetchone()
-            return True if result else False
-
     def recuperer_prenom(self, email):
-        with self.db_connection.cursor() as cursor:
-            query = "SELECT prenom FROM Utilisateurs WHERE email=%s"
-            cursor.execute(query, (email,))
+        with self.db_connection.cursor(buffered=True) as cursor:
+            cursor.execute("SELECT prenom FROM Utilisateurs WHERE email = %s", (email,))
             result = cursor.fetchone()
-            return result[0] if result else None
-
-    def recupererIdUtilisateur(self):
-        with self.db_connection.cursor() as cursor:
-            query = "SELECT id_utilisateur FROM Utilisateurs WHERE email = %s"  # Ajusté pour utiliser id_utilisateur
-            cursor.execute(query, (self.user_email,))
-            result = cursor.fetchone()
-            return result[0] if result else None
+            return result[0] if result else "Inconnu"
 
     def clearLayout(self, layout):
         while layout.count():
@@ -172,7 +161,7 @@ class ChatApplication(QMainWindow):
             QWidget {
                 background-color: #36393f;
             }
-            QLineEdit, QTextEdit {
+            QLineEdit, QTextEdit, QPushButton {
                 background-color: #40444b;
                 color: #ffffff;
                 border: None;
@@ -192,12 +181,21 @@ class ChatApplication(QMainWindow):
             }
         """)
 
+    def ouvrirMenuEmoticones(self):
+        menu_emoticones = QMenu(self)
+        emoticones = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚']
+        for emo in emoticones:
+            action = QAction(emo, self)
+            action.triggered.connect(lambda checked, e=emo: self.message_edit.insert(e))
+            menu_emoticones.addAction(action)
+        menu_emoticones.exec_(self.emoticone_btn.mapToGlobal(self.emoticone_btn.rect().bottomLeft()))
+
 def main():
     db_connection = mysql.connector.connect(
-        host='ahmed-aouad.students-laplateforme.io',
-        user='ahmed-aouad',
-        password='ouarda2017',
-        database='ahmed-aouad_mydiscord'
+        host='your_host',
+        user='your_user',
+        password='your_password',
+        database='your_database'
     )
 
     app = QApplication(sys.argv)
