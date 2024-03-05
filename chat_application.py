@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QTextEdit, QMessageBox, QMenu, QAction
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QTextEdit, QMessageBox, QMenu, QAction, QComboBox
 from datetime import datetime
 import mysql.connector
 
@@ -8,6 +8,9 @@ class ChatApplication(QMainWindow):
         super().__init__()
         self.db_connection = db_connection
         self.estConnecte = False
+        self.user_email = ''
+        self.prenom = ''
+        self.messages = {}  # Dictionnaire pour stocker les messages par canal
         self.initUI()
 
     def initUI(self):
@@ -59,17 +62,21 @@ class ChatApplication(QMainWindow):
         self.envoyer_btn = QPushButton('Envoyer')
         self.deconnexion_btn = QPushButton('Déconnexion')
         self.emoticone_btn = QPushButton('😀')
+        self.selection_canal = QComboBox()
 
         self.layout_principal.addWidget(self.zone_messages)
         self.layout_principal.addWidget(self.message_edit)
         self.layout_principal.addWidget(self.envoyer_btn)
         self.layout_principal.addWidget(self.deconnexion_btn)
         self.layout_principal.addWidget(self.emoticone_btn)
+        self.layout_principal.addWidget(self.selection_canal)
 
         self.envoyer_btn.clicked.connect(self.envoyerMessage)
         self.deconnexion_btn.clicked.connect(self.deconnexion)
         self.emoticone_btn.clicked.connect(self.ouvrirMenuEmoticones)
-        self.chargerHistorique()
+        self.selection_canal.currentIndexChanged.connect(self.changerCanal)
+
+        self.chargerCanaux()
 
     def connecterUtilisateur(self):
         email = self.email_edit.text().strip()
@@ -115,33 +122,60 @@ class ChatApplication(QMainWindow):
         if self.estConnecte:
             message = self.message_edit.text().strip()
             if message:
+                canal_id = self.selection_canal.currentData()  # Récupérer l'ID du canal actuel
                 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 formatted_message = f"[{timestamp}] {self.prenom}: {message}"
                 self.zone_messages.append(formatted_message)
-                self.enregistrerMessage(message)
+                self.enregistrerMessage(message, canal_id)  # Passer l'ID du canal
                 self.message_edit.clear()
 
-    def enregistrerMessage(self, message):
+    def enregistrerMessage(self, message, canal_id):
         with self.db_connection.cursor(buffered=True) as cursor:
-            query = "INSERT INTO Messages (id_utilisateur, contenu, date_publication) VALUES ((SELECT id_utilisateur FROM Utilisateurs WHERE email = %s), %s, NOW())"
-            cursor.execute(query, (self.user_email, message))
+            query = "INSERT INTO Messages (id_utilisateur, contenu, date_publication, id_canal) VALUES ((SELECT id_utilisateur FROM Utilisateurs WHERE email = %s), %s, NOW(), %s)"
+            cursor.execute(query, (self.user_email, message, canal_id))
             self.db_connection.commit()
 
-    def chargerHistorique(self):
+    def chargerHistorique(self, canal_id):
+        print("Chargement de l'historique pour le canal :", canal_id)
+        if canal_id in self.messages:
+            print("Messages déjà chargés pour ce canal.")
+        else:
+            self.messages[canal_id] = []
+
+        # Charger l'historique des messages à partir de la base de données
         with self.db_connection.cursor(buffered=True) as cursor:
-            cursor.execute("SELECT contenu, date_publication FROM Messages WHERE id_utilisateur = (SELECT id_utilisateur FROM Utilisateurs WHERE email = %s) ORDER BY date_publication ASC", (self.user_email,))
-            for (contenu, date_publication) in cursor:
+            cursor.execute("SELECT contenu, date_publication FROM Messages WHERE id_canal = %s ORDER BY date_publication ASC", (canal_id,))
+            for contenu, date_publication in cursor:
                 if date_publication:
                     timestamp = date_publication.strftime('%Y-%m-%d %H:%M:%S')
-                    formatted_message = f"[{timestamp}] {self.prenom}: {contenu}"
+                    formatted_message = f"[{timestamp}] {contenu}"
                 else:
-                    formatted_message = "[Date inconnue] {self.prenom}: {contenu}"
-                self.zone_messages.append(formatted_message)
+                    formatted_message = "[Date inconnue] {contenu}"
+                print("Message chargé :", formatted_message)
+                self.messages[canal_id].append(formatted_message)
+
+        print("Messages chargés pour le canal :", canal_id)
+        for message in self.messages[canal_id]:
+            print("Affichage du message :", message)
+            self.zone_messages.append(message)
+
+    def chargerCanaux(self):
+        with self.db_connection.cursor(buffered=True) as cursor:
+            cursor.execute("SELECT id_canal, nom_canal FROM Canaux")
+            canaux = cursor.fetchall()
+            for canal in canaux:
+                self.selection_canal.addItem(canal[1], canal[0])
+
+    def changerCanal(self):
+        canal_id = self.selection_canal.currentData()
+        self.zone_messages.clear()
+        if canal_id is not None:
+            self.chargerHistorique(canal_id)
 
     def deconnexion(self):
         self.estConnecte = False
         self.user_email = ''
-        self.prenom = ''  # Réinitialiser le prénom lors de la déconnexion
+        self.prenom = ''  
         self.setupConnexionUI()
 
     def recuperer_prenom(self, email):

@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from db import Database
-from chat_application import ChatApplication  # Assurez-vous que la classe fusionnée s'appelle ChatApplication
+from chat_application import ChatApplication  
 
 def main():
     # Initialisation de la connexion à la base de données
