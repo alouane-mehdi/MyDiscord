@@ -1,5 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QTextEdit, QMessageBox, QMenu, QAction, QComboBox
+from PyQt5.QtCore import QTimer
 from datetime import datetime
 import mysql.connector
 
@@ -12,6 +13,11 @@ class ChatApplication(QMainWindow):
         self.prenom = ''
         self.messages = {}  # Dictionnaire pour stocker les messages par canal
         self.initUI()
+
+        # Définir un QTimer pour rafraîchir périodiquement les messages
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.refreshMessages)
+        self.timer.start(1000)  # Rafraîchir toutes les 1 seconde
 
     def initUI(self):
         self.central_widget = QWidget()
@@ -86,6 +92,7 @@ class ChatApplication(QMainWindow):
             self.user_email = email
             self.prenom = self.recuperer_prenom(email)
             self.setupChatUI()
+            self.refreshMessages()  # Actualiser les messages dès la connexion de l'utilisateur
         else:
             QMessageBox.critical(self, 'Erreur', 'Email ou mot de passe incorrect.')
 
@@ -106,6 +113,7 @@ class ChatApplication(QMainWindow):
                     self.user_email = email
                     self.prenom = prenom
                     self.setupChatUI()
+                    self.refreshMessages()  # Actualiser les messages dès l'enregistrement de l'utilisateur
                 except mysql.connector.Error as e:
                     self.db_connection.rollback()
                     QMessageBox.critical(self, 'Erreur', f'Erreur lors de l\'enregistrement: {e}')
@@ -149,15 +157,8 @@ class ChatApplication(QMainWindow):
                 if date_publication:
                     timestamp = date_publication.strftime('%Y-%m-%d %H:%M:%S')
                     formatted_message = f"[{timestamp}] {contenu}"
-                else:
-                    formatted_message = "[Date inconnue] {contenu}"
-                print("Message chargé :", formatted_message)
-                self.messages[canal_id].append(formatted_message)
-
-        print("Messages chargés pour le canal :", canal_id)
-        for message in self.messages[canal_id]:
-            print("Affichage du message :", message)
-            self.zone_messages.append(message)
+                    self.messages[canal_id].append({'contenu': contenu, 'date_publication': date_publication})
+        self.displayMessages(canal_id)
 
     def chargerCanaux(self):
         with self.db_connection.cursor(buffered=True) as cursor:
@@ -223,6 +224,30 @@ class ChatApplication(QMainWindow):
             action.triggered.connect(lambda checked, e=emo: self.message_edit.insert(e))
             menu_emoticones.addAction(action)
         menu_emoticones.exec_(self.emoticone_btn.mapToGlobal(self.emoticone_btn.rect().bottomLeft()))
+
+    def refreshMessages(self):
+        if self.estConnecte:
+            canal_id = self.selection_canal.currentData()  # Récupérer l'ID du canal actuel
+            last_message_time = self.messages[canal_id][-1]['date_publication'] if self.messages.get(canal_id) else None
+            new_messages = self.getNewMessages(canal_id, last_message_time)
+            if new_messages:
+                self.messages.setdefault(canal_id, []).extend(new_messages)
+                self.displayMessages(canal_id)  # Afficher les nouveaux messages dès qu'ils sont disponibles
+
+    def getNewMessages(self, canal_id, last_message_time):
+        new_messages = []
+        with self.db_connection.cursor(buffered=True) as cursor:
+            query = "SELECT contenu, date_publication FROM Messages WHERE id_canal = %s AND date_publication > %s ORDER BY date_publication ASC"
+            cursor.execute(query, (canal_id, last_message_time))
+            for contenu, date_publication in cursor:
+                new_messages.append({'contenu': contenu, 'date_publication': date_publication})
+        return new_messages
+
+    def displayMessages(self, canal_id):
+        self.zone_messages.clear()
+        for message in self.messages[canal_id]:
+            formatted_message = f"[{message['date_publication']}] {message['contenu']}"
+            self.zone_messages.append(formatted_message)
 
 def main():
     db_connection = mysql.connector.connect(
