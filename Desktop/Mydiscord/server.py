@@ -3,8 +3,9 @@ import threading
 
  #config du server
 
-IP = '127.0.0.1'
 
+
+IP = '127.0.0.1'
 PORT = 55559
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 

@@ -3,7 +3,7 @@ import threading
 
 
 IP = "127.0.0.1"
-PORT = 55556
+PORT = 55558
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
