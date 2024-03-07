@@ -1,28 +1,29 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from db import Database
-from chat_application import ChatApplication  
+from chat_application import ChatApplication 
 
-def main():
-    # Initialisation de la connexion à la base de données
-    db = Database('ahmed-aouad.students-laplateforme.io', 'ahmed-aouad', 'ouarda2017', 'ahmed-aouad_mydiscord')
-    db_connection = db.get_connection()
+class Main:
+    def __init__(self, db_host, db_user, db_password, db_name):
+        self.db_host = db_host
+        self.db_user = db_user
+        self.db_password = db_password
+        self.db_name = db_name
 
-    # Initialisation de l'application Qt
-    app = QApplication(sys.argv)
+    def connect_to_database(self):
+        db = Database(self.db_host, self.db_user, self.db_password, self.db_name)
+        return db.get_connection()
 
-    if db_connection is not None:
-        # Création et affichage de la fenêtre principale de l'application de chat
-        chat_application = ChatApplication(db_connection)
-        chat_application.show()
-    else:
-        print("Échec de la connexion à la base de données.")
-
-    # Exécution de l'application Qt et sortie propre à la fermeture
-    sys.exit(app.exec_())
+    def run(self):
+        db_connection = self.connect_to_database()
+        if db_connection is not None:
+            app = QApplication(sys.argv)
+            chat_application = ChatApplication(db_connection)
+            chat_application.show()
+            sys.exit(app.exec_())
+        else:
+            print("Échec de la connexion à la base de données.")
 
 if __name__ == "__main__":
-    main()
-
-
-    # test historique avec cristiano et abdel 
+    chat_manager = Main('ahmed-aouad.students-laplateforme.io', 'ahmed-aouad', 'ouarda2017', 'ahmed-aouad_mydiscord')
+    chat_manager.run()

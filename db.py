@@ -27,34 +27,3 @@ class Database:
     def close(self):
         if self.connection:
             self.connection.close()
-
-    def get_channels(self):
-        channels = []
-        try:
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT id_canal, nom_canal FROM Canaux")
-            channels = cursor.fetchall()
-            cursor.close()
-        except mysql.connector.Error as e:
-            print(f"Erreur lors de la récupération des canaux: {e}")
-        return channels
-
-    def get_channel_messages(self, channel_id):
-        messages = []
-        try:
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT contenu, date_publication FROM Messages WHERE id_canal = %s", (channel_id,))
-            messages = cursor.fetchall()
-            cursor.close()
-        except mysql.connector.Error as e:
-            print(f"Erreur lors de la récupération des messages du canal: {e}")
-        return messages
-
-    def add_message(self, channel_id, content):
-        try:
-            cursor = self.connection.cursor()
-            cursor.execute("INSERT INTO Messages (id_canal, contenu) VALUES (%s, %s)", (channel_id, content))
-            self.connection.commit()
-            cursor.close()
-        except mysql.connector.Error as e:
-            print(f"Erreur lors de l'ajout du message: {e}")

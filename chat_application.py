@@ -17,9 +17,10 @@ class ChatApplication(QMainWindow):
         # Définir un QTimer pour rafraîchir périodiquement les messages
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refreshMessages)
-        self.timer.start(1000)  # Rafraîchir toutes les 1 seconde
+        self.timer.start(1000)  # Rafraîchir toutes les 1 secondes
 
     def initUI(self):
+        # Initialisation de l'interface utilisateur
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout_principal = QVBoxLayout(self.central_widget)
@@ -30,6 +31,7 @@ class ChatApplication(QMainWindow):
         self.appliquerStyles()
 
     def setupConnexionUI(self):
+        # Configuration de l'interface utilisateur pour la connexion
         self.clearLayout(self.layout_principal)
 
         self.email_edit = QLineEdit()
@@ -59,6 +61,7 @@ class ChatApplication(QMainWindow):
         self.enregistrement_btn.clicked.connect(self.enregistrerUtilisateur)
 
     def setupChatUI(self):
+        # Configuration de l'interface utilisateur pour le chat
         self.clearLayout(self.layout_principal)
 
         self.zone_messages = QTextEdit()
@@ -92,7 +95,6 @@ class ChatApplication(QMainWindow):
             self.user_email = email
             self.prenom = self.recuperer_prenom(email)
             self.setupChatUI()
-            self.refreshMessages()  # Actualiser les messages dès la connexion de l'utilisateur
         else:
             QMessageBox.critical(self, 'Erreur', 'Email ou mot de passe incorrect.')
 
@@ -113,7 +115,6 @@ class ChatApplication(QMainWindow):
                     self.user_email = email
                     self.prenom = prenom
                     self.setupChatUI()
-                    self.refreshMessages()  # Actualiser les messages dès l'enregistrement de l'utilisateur
                 except mysql.connector.Error as e:
                     self.db_connection.rollback()
                     QMessageBox.critical(self, 'Erreur', f'Erreur lors de l\'enregistrement: {e}')
@@ -232,7 +233,7 @@ class ChatApplication(QMainWindow):
             new_messages = self.getNewMessages(canal_id, last_message_time)
             if new_messages:
                 self.messages.setdefault(canal_id, []).extend(new_messages)
-                self.displayMessages(canal_id)  # Afficher les nouveaux messages dès qu'ils sont disponibles
+                self.displayMessages(canal_id)
 
     def getNewMessages(self, canal_id, last_message_time):
         new_messages = []
